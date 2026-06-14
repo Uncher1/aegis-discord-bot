@@ -6,6 +6,9 @@ import {
   clearPending,
 } from '../src/bot/pendingAction.js';
 import { looksLikeBotAddress, addressConfidence, isAffirmation, isNegation } from '../src/bot/prefilter.js';
+import { parseColor } from '../src/tools/colorParse.js';
+import { parsePermissionNames, permissionNamesOf } from '../src/tools/permNames.js';
+import { PermissionFlagsBits } from 'discord.js';
 import type { ToolResult } from '../src/tools/types.js';
 
 let passed = 0;
@@ -82,6 +85,30 @@ check('non negates', isNegation('non') === true);
 check('annule negates', isNegation('annule') === true);
 check('laisse tomber negates', isNegation('laisse tomber') === true);
 check('oui does not negate', isNegation('oui') === false);
+
+// --- colorParse ---
+const cHex = parseColor('#5865F2');
+check('hex color parses', cHex.ok === true && cHex.ok && cHex.value === 0x5865f2);
+const cHexNoHash = parseColor('5865F2');
+check('hex without # parses', cHexNoHash.ok === true && cHexNoHash.ok && cHexNoHash.value === 0x5865f2);
+const cNamed = parseColor('rouge');
+check('named color parses', cNamed.ok === true && cNamed.ok && cNamed.value === 0xed4245);
+check('named color bleu parses', parseColor('bleu').ok === true);
+check('uppercase named color parses', parseColor('ROUGE').ok === true);
+check('invalid color rejected', parseColor('pasunecouleur').ok === false);
+check('bad hex rejected', parseColor('#GGGGGG').ok === false);
+
+// --- permNames ---
+const pOk = parsePermissionNames(['ViewChannel', 'SendMessages'], 'test');
+check('valid perms parse', pOk.ok === true && pOk.ok && pOk.bits === (PermissionFlagsBits.ViewChannel | PermissionFlagsBits.SendMessages));
+check('empty perms = 0n', (() => { const r = parsePermissionNames([], 'test'); return r.ok && r.bits === 0n; })());
+check('undefined perms = 0n', (() => { const r = parsePermissionNames(undefined, 'test'); return r.ok && r.bits === 0n; })());
+check('unknown perm rejected', parsePermissionNames(['NotAPermission'], 'test').ok === false);
+check('permissionNamesOf round-trips', (() => {
+  const bits = PermissionFlagsBits.BanMembers | PermissionFlagsBits.KickMembers;
+  const names = permissionNamesOf(bits);
+  return names.includes('BanMembers') && names.includes('KickMembers');
+})());
 
 console.log(`\nRESULTAT: ${passed} passes, ${failed} echecs`);
 process.exit(failed > 0 ? 1 : 0);
