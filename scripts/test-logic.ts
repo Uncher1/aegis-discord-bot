@@ -8,6 +8,7 @@ import {
 import { looksLikeBotAddress, addressConfidence, isAffirmation, isNegation } from '../src/bot/prefilter.js';
 import { parseColor } from '../src/tools/colorParse.js';
 import { parsePermissionNames, permissionNamesOf } from '../src/tools/permNames.js';
+import { applyOverwriteEdit, bitsOf } from '../src/tools/overwrites.js';
 import { PermissionFlagsBits } from 'discord.js';
 import type { ToolResult } from '../src/tools/types.js';
 
@@ -109,6 +110,25 @@ check('permissionNamesOf round-trips', (() => {
   const names = permissionNamesOf(bits);
   return names.includes('BanMembers') && names.includes('KickMembers');
 })());
+
+// --- overwrites: bitsOf ---
+const V = PermissionFlagsBits.ViewChannel;
+const S = PermissionFlagsBits.SendMessages;
+check('bitsOf resolves names', bitsOf(['ViewChannel', 'SendMessages']) === (V | S));
+check('bitsOf skips unknown', bitsOf(['ViewChannel', 'Bogus']) === V);
+check('bitsOf undefined = 0n', bitsOf(undefined) === 0n);
+
+// --- overwrites: applyOverwriteEdit ---
+const zero = { allow: 0n, deny: 0n };
+check('merge adds allow', (() => { const r = applyOverwriteEdit(zero, 'merge', V, 0n, 0n); return !!r && r.allow === V && r.deny === 0n; })());
+check('merge adds deny', (() => { const r = applyOverwriteEdit(zero, 'merge', 0n, S, 0n); return !!r && r.allow === 0n && r.deny === S; })());
+check('merge allow overrides deny', (() => { const r = applyOverwriteEdit({ allow: 0n, deny: S }, 'merge', S, 0n, 0n); return !!r && r.allow === S && r.deny === 0n; })());
+check('merge deny overrides allow', (() => { const r = applyOverwriteEdit({ allow: S, deny: 0n }, 'merge', 0n, S, 0n); return !!r && r.allow === 0n && r.deny === S; })());
+check('merge neutral clears both -> null', applyOverwriteEdit({ allow: V, deny: 0n }, 'merge', 0n, 0n, V) === null);
+check('merge neutral on one flag keeps others', (() => { const r = applyOverwriteEdit({ allow: V | S, deny: 0n }, 'merge', 0n, 0n, V); return !!r && r.allow === S; })());
+check('replace sets exact bits', (() => { const r = applyOverwriteEdit({ allow: V, deny: S }, 'replace', S, 0n, 0n); return !!r && r.allow === S && r.deny === 0n; })());
+check('replace with nothing -> null', applyOverwriteEdit({ allow: V, deny: 0n }, 'replace', 0n, 0n, 0n) === null);
+check('remove -> null', applyOverwriteEdit({ allow: V, deny: S }, 'remove', 0n, 0n, 0n) === null);
 
 console.log(`\nRESULTAT: ${passed} passes, ${failed} echecs`);
 process.exit(failed > 0 ? 1 : 0);

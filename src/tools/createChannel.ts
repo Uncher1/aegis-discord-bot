@@ -6,8 +6,7 @@ import {
   type OverwriteResolvable,
 } from 'discord.js';
 import type { ToolDefinition, ToolResult } from './types.js';
-
-type PermName = keyof typeof PermissionFlagsBits;
+import { parsePermissionNames } from './permNames.js';
 
 interface PermEntry {
   role_id?: string;
@@ -33,24 +32,6 @@ interface Args {
   video_quality_mode?: 'auto' | '720p';
 }
 
-function parsePerms(
-  names: string[] | undefined,
-  context: string,
-): { ok: true; bits: bigint } | { ok: false; error: string } {
-  if (!names || names.length === 0) return { ok: true, bits: 0n };
-  let bits = 0n;
-  for (const n of names) {
-    const flag = PermissionFlagsBits[n as PermName];
-    if (flag === undefined) {
-      return {
-        ok: false,
-        error: `Permission inconnue dans ${context}: "${n}". Utilise un nom de PermissionFlagsBits (ex: ViewChannel, SendMessages, ReadMessageHistory, Connect, Speak, ManageChannels...).`,
-      };
-    }
-    bits |= flag;
-  }
-  return { ok: true, bits };
-}
 
 export const createChannelTool: ToolDefinition = {
   name: 'create_channel',
@@ -246,9 +227,9 @@ export const createChannelTool: ToolDefinition = {
       const label = entry.role_id
         ? `role_permissions[${entry.role_id}]`
         : `member_permissions[${entry.member_id}]`;
-      const allowP = parsePerms(entry.allow, `${label}.allow`);
+      const allowP = parsePermissionNames(entry.allow, `${label}.allow`);
       if (!allowP.ok) return allowP;
-      const denyP = parsePerms(entry.deny, `${label}.deny`);
+      const denyP = parsePermissionNames(entry.deny, `${label}.deny`);
       if (!denyP.ok) return denyP;
 
       accs.set(targetId, { id: targetId, allow: allowP.bits, deny: denyP.bits });

@@ -8,9 +8,8 @@ import {
   type VoiceChannel,
 } from 'discord.js';
 import type { ToolDefinition, ToolResult } from './types.js';
-
-type PermName = keyof typeof PermissionFlagsBits;
-type OverwriteMode = 'merge' | 'replace' | 'remove';
+import { parsePermissionNames } from './permNames.js';
+import { applyOverwriteEdit, bitsOf, type OverwriteMode } from './overwrites.js';
 
 interface PermEntry {
   role_id?: string;
@@ -49,35 +48,6 @@ interface Args {
     deny?: string[];
     neutral?: string[];
   }>;
-}
-
-function parsePerms(
-  names: string[] | undefined,
-  context: string,
-): { ok: true; bits: bigint } | { ok: false; error: string } {
-  if (!names || names.length === 0) return { ok: true, bits: 0n };
-  let bits = 0n;
-  for (const n of names) {
-    const flag = PermissionFlagsBits[n as PermName];
-    if (flag === undefined) {
-      return {
-        ok: false,
-        error: `Permission inconnue dans ${context}: "${n}". Utilise un nom de PermissionFlagsBits (ex: ViewChannel, SendMessages, Connect, Speak, ManageChannels...).`,
-      };
-    }
-    bits |= flag;
-  }
-  return { ok: true, bits };
-}
-
-function toBits(names: string[] | undefined): bigint {
-  if (!names) return 0n;
-  let b = 0n;
-  for (const n of names) {
-    const flag = PermissionFlagsBits[n as PermName];
-    if (flag !== undefined) b |= flag;
-  }
-  return b;
 }
 
 export const modifyChannelTool: ToolDefinition = {
@@ -313,11 +283,11 @@ export const modifyChannelTool: ToolDefinition = {
       const label = entry.role_id
         ? `role_permissions[${entry.role_id}]`
         : `member_permissions[${entry.member_id}]`;
-      const a1 = parsePerms(entry.allow, `${label}.allow`);
+      const a1 = parsePermissionNames(entry.allow, `${label}.allow`);
       if (!a1.ok) return a1;
-      const a2 = parsePerms(entry.deny, `${label}.deny`);
+      const a2 = parsePermissionNames(entry.deny, `${label}.deny`);
       if (!a2.ok) return a2;
-      const a3 = parsePerms(entry.neutral, `${label}.neutral`);
+      const a3 = parsePermissionNames(entry.neutral, `${label}.neutral`);
       if (!a3.ok) return a3;
     }
 
@@ -372,42 +342,20 @@ export const modifyChannelTool: ToolDefinition = {
       }
     }
 
-    // 9) Overwrites explicites
+    // 9) Overwrites explicites (logique merge/replace/remove dans overwrites.ts)
     for (const entry of explicit) {
       const targetId = (entry.role_id ?? entry.member_id) as string;
       const mode: OverwriteMode = entry.mode ?? 'merge';
-
-      if (mode === 'remove') {
-        accs.delete(targetId);
-        continue;
-      }
-
-      const allowBits = toBits(entry.allow);
-      const denyBits = toBits(entry.deny);
-      const neutralBits = mode === 'merge' ? toBits(entry.neutral) : 0n;
-
-      if (mode === 'replace') {
-        if (allowBits === 0n && denyBits === 0n) {
-          // replace avec tout à zéro => équivaut à remove (aucun overwrite utile)
-          accs.delete(targetId);
-        } else {
-          accs.set(targetId, { id: targetId, allow: allowBits, deny: denyBits });
-        }
-        continue;
-      }
-
-      // merge
       const cur = accs.get(targetId) ?? { id: targetId, allow: 0n, deny: 0n };
-      // applique deny (puis allow prime si conflit)
-      cur.allow &= ~denyBits;
-      cur.deny |= denyBits;
-      cur.deny &= ~allowBits;
-      cur.allow |= allowBits;
-      // neutral retire des deux
-      cur.allow &= ~neutralBits;
-      cur.deny &= ~neutralBits;
-      if (cur.allow === 0n && cur.deny === 0n) accs.delete(targetId);
-      else accs.set(targetId, cur);
+      const next = applyOverwriteEdit(
+        cur,
+        mode,
+        bitsOf(entry.allow),
+        bitsOf(entry.deny),
+        mode === 'merge' ? bitsOf(entry.neutral) : 0n,
+      );
+      if (next === null) accs.delete(targetId);
+      else accs.set(targetId, { id: targetId, allow: next.allow, deny: next.deny });
     }
 
     // 10) Payload de edit()
