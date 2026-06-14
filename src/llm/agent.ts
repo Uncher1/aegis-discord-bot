@@ -141,7 +141,8 @@ ACTIONS DISPO (exécutées immédiatement, le bot agit avec SES propres permissi
 - Messages: purge_messages (suppression en masse).
 - Serveur: modify_server (nom, AFK, vérification, salon système, filtre), clone_channel (dupliquer un salon).
 - Émojis: create_emoji (depuis une URL ou une image jointe listée dans le Contexte), delete_emoji.
-NON DISPO (dis "pas encore", n'appelle JAMAIS de tool inexistant): les événements programmés.
+- Événements: create_event, list_events, delete_event.
+Tout est couvert: si une demande sort vraiment du périmètre Discord administratif, dis-le simplement.
 
 ACTIONS IRRÉVERSIBLES AVEC CONFIRMATION (delete_channel, delete_category, delete_role, kick_member, ban_member, purge_messages):
 Ces outils n'agissent PAS tout de suite: ils mettent l'action en file d'attente et renvoient un résultat "mise en attente de confirmation" (display VIDE). Le système ajoute AUTOMATIQUEMENT, après ta réponse, la demande de confirmation groupée (oui/non) avec la liste des actions. Donc: ne pose PAS toi-même la question oui/non, ne récris PAS la liste, ne prétends PAS que c'est fait. Réponds par une phrase courte et neutre, ou rien. Tu PEUX empiler plusieurs actions destructives dans la même réponse (ex: supprimer 3 salons d'un coup, ou supprimer un salon ET bannir un membre): elles seront toutes confirmées par un seul "oui". Pour delete_category, ne mets delete_children que si l'owner demande explicitement de supprimer aussi les salons à l'intérieur.
@@ -161,6 +162,7 @@ MODÉRATION:
 MEMBRES ET MESSAGES:
 - set_nickname: member_id depuis la @mention; nickname=null retire le pseudo. move_member: le membre doit être en vocal; channel_id=null le déconnecte.
 - purge_messages: count entre 1 et 100; user_id optionnel pour ne supprimer que les messages d'un membre précis. C'est une action à confirmation (relaie le display vide, le système demande oui/non). Discord ignore les messages de plus de 14 jours.
+- create_event: calcule start_time/end_time en ISO 8601 AVEC fuseau à partir de la ligne Date du Contexte (ex: "demain 20h" → date du lendemain à 20:00 heure de Paris en ISO). Un événement a soit un salon vocal/stage, soit un lieu texte (location, qui exige end_time).
 
 PERSONNALISATION MAXIMALE vs SIMPLICITÉ:
 - Plus l'owner donne de détails, plus tu appliques d'options. TRADUIS CHAQUE détail en paramètre concret. Applique TOUS les éléments mentionnés (bitrate, région, slowmode, user_limit, topic, overwrites). Combine allow+deny dans la même entrée; mixe role_permissions + member_permissions sur la même cible.
@@ -422,8 +424,9 @@ export async function runAgent(
       ? `Images/fichiers joints au message (URLs utilisables, ex: create_emoji): ${attachmentUrls.join(', ')}\n\n`
       : '';
 
+  const now = new Date();
   const userContent = `Contexte:
-Date: ${formatDateFR(new Date())} (Europe/Paris)
+Date: ${formatDateFR(now)} (Europe/Paris) | ISO UTC: ${now.toISOString()}
 Serveur: "${guild.name}", ${guild.memberCount} membres, boost=${boostTierLabel(guild.premiumTier)} (${guild.premiumSubscriptionCount ?? 0}), locale=${guild.preferredLocale}, créé ${formatDateFR(guild.createdAt)}. Stats: ${categories.length} cat, ${nNonCategoryChannels} salons hors-cat, ${roles.length + 1} rôles (@everyone inclus).
 ${myInfoLine}
 Salon actuel: #${ctx.name}=${ctx.id}(${ctx.typeLabel})${currentChannelExtrasLine}, ${parentShort}

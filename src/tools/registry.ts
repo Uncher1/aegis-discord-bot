@@ -22,6 +22,7 @@ import { purgeMessagesTool } from './purgeMessages.js';
 import { modifyServerTool } from './modifyServer.js';
 import { cloneChannelTool } from './cloneChannel.js';
 import { createEmojiTool, deleteEmojiTool } from './emoji.js';
+import { createEventTool, listEventsTool, deleteEventTool } from './events.js';
 
 export const tools: ToolDefinition[] = [
   listChannelsTool,
@@ -48,6 +49,9 @@ export const tools: ToolDefinition[] = [
   cloneChannelTool,
   createEmojiTool,
   deleteEmojiTool,
+  createEventTool,
+  listEventsTool,
+  deleteEventTool,
 ];
 
 export function findTool(name: string): ToolDefinition | undefined {
