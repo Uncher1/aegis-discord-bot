@@ -47,6 +47,9 @@ export const purgeMessagesTool: ToolDefinition = {
     if (!Number.isInteger(a.count) || a.count < 1 || a.count > 100) {
       return { ok: false, error: 'count doit etre un entier entre 1 et 100.' };
     }
+    if (a.user_id !== undefined && (typeof a.user_id !== 'string' || !/^\d{5,}$/.test(a.user_id))) {
+      return { ok: false, error: 'user_id doit etre un ID Discord valide (chiffres) si fourni.' };
+    }
     const channel = asTextChannel(ctx.guild, a.channel_id);
     if (!channel) {
       return { ok: false, error: `Salon ID "${a.channel_id}" introuvable ou ne supporte pas la purge de messages.` };
