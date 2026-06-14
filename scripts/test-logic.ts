@@ -55,6 +55,15 @@ check('clearPending works', hasPending('o2') === false);
 check('o3 untouched by o2 clear', hasPending('o3') === true);
 clearPending('o3');
 
+// --- pendingAction: duplicate description is not queued twice ---
+clearPending('o4');
+addPending('o4', mk('Supprimer #x'));
+addPending('o4', mk('Supprimer #x'));
+check('addPending dedups identical descriptions', pendingDescriptions('o4').length === 1);
+addPending('o4', mk('Supprimer #y'));
+check('addPending still adds distinct descriptions', pendingDescriptions('o4').length === 2);
+clearPending('o4');
+
 // --- prefilter: addressing ---
 check('admin verb addresses', looksLikeBotAddress('crée un salon news', false) === true);
 check('name addresses', looksLikeBotAddress('aegis tu fais quoi', false) === true);

@@ -42,8 +42,11 @@ function liveBatch(ownerId: string): PendingBatch | null {
 export function addPending(ownerId: string, action: PendingAction): void {
   const existing = liveBatch(ownerId);
   if (existing) {
-    existing.actions.push(action);
     existing.expiresAt = Date.now() + TTL_MS;
+    // Never queue the same action twice (e.g. a model re-issuing the same call
+    // across iterations); that would run it twice on a single "oui".
+    if (existing.actions.some((a) => a.description === action.description)) return;
+    existing.actions.push(action);
   } else {
     store.set(ownerId, { actions: [action], expiresAt: Date.now() + TTL_MS });
   }

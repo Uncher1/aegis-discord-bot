@@ -429,6 +429,11 @@ ${emojisBlock}${attachmentsLine}Message de ${owner.tag}: ${message.content}`;
   // model finishes without writing any text of its own.
   const executedDisplays: string[] = [];
 
+  // Identical tool calls are executed at most once for the whole run, not just
+  // within one response: a weaker model that re-calls the same tool in a later
+  // iteration must not run (or re-queue) the action twice.
+  const seenCalls = new Set<string>();
+
   for (let iter = 0; iter < MAX_ITERATIONS; iter++) {
     let response: ChatCompletion;
     try {
@@ -485,7 +490,6 @@ ${emojisBlock}${attachmentsLine}Message de ${owner.tag}: ${message.content}`;
       tool_calls: toolCalls,
     });
 
-    const seenCalls = new Set<string>();
     for (const call of toolCalls) {
       const toolName = call.function.name;
       const tool = findTool(toolName);
@@ -572,8 +576,11 @@ ${emojisBlock}${attachmentsLine}Message de ${owner.tag}: ${message.content}`;
     }
   }
 
-  // If actions were queued during the loop, stay silent: the confirmation
-  // prompt appended downstream carries the message. Otherwise, report the stall.
-  if (hasPending(owner.id)) return '';
+  // If actions were queued during the loop, warn that the agent was cut off so
+  // the owner re-reads the queued actions before confirming. Otherwise report
+  // the stall plainly.
+  if (hasPending(owner.id)) {
+    return "J'ai atteint ma limite d'itérations avant de tout finir. Vérifie bien ce qui est en attente avant de confirmer.";
+  }
   return `Désolé, j'ai atteint la limite de ${MAX_ITERATIONS} itérations sans conclusion. Reformule ta demande de manière plus directe.`;
 }

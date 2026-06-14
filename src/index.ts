@@ -48,6 +48,11 @@ async function main(): Promise<void> {
     await guild.leave().catch((err) => logger.error('Failed to leave guild', { id: guild.id, err: String(err) }));
   });
 
+  // Per-owner serialization: the owner id maps to the tail of their in-flight
+  // message-processing chain, so their messages are handled strictly one at a
+  // time, in arrival order.
+  const ownerLocks = new Map<string, Promise<void>>();
+
   client.on(Events.MessageCreate, async (message) => {
     const state = tryGetBotState();
     if (!state) return;
@@ -57,6 +62,11 @@ async function main(): Promise<void> {
     if (message.author.id !== state.owner.id) return;
     if (!message.content || message.content.trim() === '') return;
 
+    // Chain this message after the owner's previous one. The body below runs
+    // only once the prior message finished, so runAgent is never concurrent for
+    // the same owner (which could merge unrelated destructive actions).
+    const ownerId = state.owner.id;
+    const run = (ownerLocks.get(ownerId) ?? Promise.resolve()).then(async () => {
     const botMentioned = message.mentions.users.has(message.client.user.id);
 
     // Pending irreversible actions waiting for confirmation. Handle yes/no
@@ -188,6 +198,11 @@ async function main(): Promise<void> {
     const rendered = renderDiscordMentions(outText, state.guild);
     logger.info('Responding to owner', { preview: rendered.slice(0, 80), pending: pending.length });
     await replyChunked(message, rendered);
+    });
+    // The stored tail swallows errors so a failure never breaks the next
+    // message's chain; the await is also guarded so the handler never rejects.
+    ownerLocks.set(ownerId, run.catch(() => {}));
+    await run.catch((err) => logger.error('Message handling failed', { err: String(err) }));
   });
 
   await client.login(config.discordToken);
