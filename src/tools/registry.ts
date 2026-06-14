@@ -19,6 +19,8 @@ import {
 } from './moderation.js';
 import { setNicknameTool, moveMemberTool } from './memberManagement.js';
 import { purgeMessagesTool } from './purgeMessages.js';
+import { modifyServerTool } from './modifyServer.js';
+import { cloneChannelTool } from './cloneChannel.js';
 
 export const tools: ToolDefinition[] = [
   listChannelsTool,
@@ -41,6 +43,8 @@ export const tools: ToolDefinition[] = [
   setNicknameTool,
   moveMemberTool,
   purgeMessagesTool,
+  modifyServerTool,
+  cloneChannelTool,
 ];
 
 export function findTool(name: string): ToolDefinition | undefined {
