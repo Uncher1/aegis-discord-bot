@@ -8,10 +8,15 @@ It is a personal executive assistant for one server owner, not a public chatbot 
 
 | Domain | Tools |
 | --- | --- |
-| Read | `list_channels`, `list_roles` |
-| Channels & categories | `create_channel`, `create_category`, `modify_channel`, `modify_category`, `delete_channel`, `delete_category` |
+| Read | `list_channels`, `list_roles`, `list_events` |
+| Channels & categories | `create_channel`, `create_category`, `modify_channel`, `modify_category`, `delete_channel`, `delete_category`, `clone_channel` |
 | Roles | `create_role`, `modify_role`, `delete_role`, `assign_role`, `remove_role` |
 | Moderation | `kick_member`, `ban_member`, `unban_member`, `timeout_member` |
+| Members | `set_nickname`, `move_member` |
+| Messages | `purge_messages` |
+| Server | `modify_server` |
+| Emojis | `create_emoji`, `delete_emoji` |
+| Events | `create_event`, `delete_event` |
 
 The agent understands permissions, overwrites, category synchronisation, voice settings (bitrate, region, user limit), slowmode, NSFW, role colors and hierarchy, and more. It resolves fuzzy references the way a human owner types them (typos, missing accents, leet spellings, "ici" / "cette catégorie").
 
@@ -19,7 +24,7 @@ The agent understands permissions, overwrites, category synchronisation, voice s
 
 A.E.G.I.S can delete channels and ban members, so it is built to be careful:
 
-- **Irreversible actions require confirmation.** Deletions, kicks and bans are queued, not executed. The bot lists what is about to happen and waits for a single "oui" to run the whole batch (or "non" to cancel everything).
+- **Irreversible actions require confirmation.** Deletions, kicks, bans and message purges are queued, not executed. The bot lists what is about to happen and waits for a single "oui" to run the whole batch (or "non" to cancel everything).
 - **Audit trail.** Every executed action is written to `aegis-audit.log`.
 - **The bot only does what it is physically allowed to.** It acts on its own Discord permissions and respects the role hierarchy (it can never touch a role above its own, and the server owner is untouchable). The owner of the bot is trusted; their personal server permissions are not used to gate actions.
 - **Single guild.** The bot binds to exactly one server and leaves any other it is invited to.
