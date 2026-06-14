@@ -1,5 +1,7 @@
 # A.E.G.I.S
 
+[![CI](https://github.com/Uncher1/aegis-discord-bot/actions/workflows/ci.yml/badge.svg)](https://github.com/Uncher1/aegis-discord-bot/actions/workflows/ci.yml)
+
 **Advanced Executive Guild Interactive System** — an autonomous AI agent that administers a Discord server from natural language. Its owner just describes what they want ("crée un salon annonces en lecture seule", "supprime ces deux rôles", "bannis ce membre"), and A.E.G.I.S turns it into the correct, minimal Discord actions.
 
 It is a personal executive assistant for one server owner, not a public chatbot or a moderator that everyone can talk to. It only ever obeys its owner, and it stays silent on everything else.
@@ -11,7 +13,7 @@ It is a personal executive assistant for one server owner, not a public chatbot 
 | Read | `list_channels`, `list_roles`, `list_events` |
 | Channels & categories | `create_channel`, `create_category`, `modify_channel`, `modify_category`, `delete_channel`, `delete_category`, `clone_channel` |
 | Roles | `create_role`, `modify_role`, `delete_role`, `assign_role`, `remove_role` |
-| Moderation | `kick_member`, `ban_member`, `unban_member`, `timeout_member` |
+| Moderation | `kick_member`, `ban_member`, `unban_member`, `timeout_member`, `list_bans` |
 | Members | `set_nickname`, `move_member` |
 | Messages | `purge_messages` |
 | Server | `modify_server` |
