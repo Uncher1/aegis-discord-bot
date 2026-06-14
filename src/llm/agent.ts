@@ -543,9 +543,13 @@ ${emojisBlock}${attachmentsLine}Message de ${owner.tag}: ${message.content}`;
       try {
         const result = await tool.execute(args, { guild, owner });
         logger.info('Tool executed', { name: toolName, ok: result.ok });
+        const argObj = (args ?? {}) as Record<string, unknown>;
+        const targetId =
+          argObj.channel_id ?? argObj.category_id ?? argObj.role_id ?? argObj.member_id ?? argObj.user_id ?? argObj.emoji_id ?? argObj.event_id;
         recordAudit({
           owner: owner.tag,
           action: toolName,
+          target: targetId !== undefined ? String(targetId) : undefined,
           ok: result.ok,
           detail: result.ok ? result.summary : result.error,
         });

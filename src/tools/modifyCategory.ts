@@ -129,6 +129,9 @@ export const modifyCategoryTool: ToolDefinition = {
     if (!a.category_id || typeof a.category_id !== 'string') {
       return { ok: false, error: 'category_id (string) requis.' };
     }
+    if (a.name !== undefined && a.name.trim() === '') {
+      return { ok: false, error: 'name doit etre une chaine non vide.' };
+    }
     const raw = ctx.guild.channels.cache.get(a.category_id);
     if (!raw) {
       return { ok: false, error: `Catégorie ID "${a.category_id}" introuvable.` };

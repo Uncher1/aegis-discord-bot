@@ -62,6 +62,9 @@ export const modifyRoleTool: ToolDefinition = {
     }
     const role = ctx.guild.roles.cache.get(a.role_id) as Role | undefined;
     if (!role) return { ok: false, error: `Role ID "${a.role_id}" introuvable.` };
+    if (a.name !== undefined && a.name.trim() === '') {
+      return { ok: false, error: 'name doit etre une chaine non vide.' };
+    }
 
     const hierErr = roleManageError(ctx.guild, role);
     if (hierErr) return { ok: false, error: hierErr };

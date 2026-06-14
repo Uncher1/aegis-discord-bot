@@ -256,7 +256,7 @@ export const timeoutMemberTool: ToolDefinition = {
       await target.timeout(a.duration_minutes * 60 * 1000, reason);
       const h = Math.floor(a.duration_minutes / 60);
       const m = a.duration_minutes % 60;
-      const dur = h > 0 ? `${h}h${m > 0 ? `${m}` : ''}` : `${m} min`;
+      const dur = h > 0 ? `${h}h${m > 0 ? String(m).padStart(2, '0') : ''}` : `${m} min`;
       return {
         ok: true,
         summary: `${tag} en timeout ${dur}`,

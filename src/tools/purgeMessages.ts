@@ -64,7 +64,6 @@ export const purgeMessagesTool: ToolDefinition = {
         const fresh = asTextChannel(ctx.guild, a.channel_id);
         if (!fresh) return { ok: false, error: `Le salon #${channelName} n'existe plus.` };
         try {
-          let deletedCount: number;
           if (a.user_id) {
             const recent = await fresh.messages.fetch({ limit: 100 });
             const mine = Array.from(recent.values())
@@ -79,18 +78,23 @@ export const purgeMessagesTool: ToolDefinition = {
               };
             }
             const deleted = await fresh.bulkDelete(mine, true);
-            deletedCount = deleted.size;
-          } else {
-            const deleted = await fresh.bulkDelete(a.count, true);
-            deletedCount = deleted.size;
+            const tooOld = mine.length - deleted.size;
+            const note = tooOld > 0 ? ` (${tooOld} trop ancien(s) pour une suppression de masse)` : '';
+            return {
+              ok: true,
+              summary: `${deleted.size} message(s) de l'utilisateur supprime(s) dans "${channelName}"`,
+              display: `${deleted.size} message(s) de <@${a.user_id}> supprime(s) dans <#${a.channel_id}>${note}.`,
+              data: { deleted: deleted.size },
+            };
           }
-          const skipped = a.count - deletedCount;
-          const note = skipped > 0 ? ` (${skipped} ignore(s), trop anciens ou introuvables)` : '';
+          const deleted = await fresh.bulkDelete(a.count, true);
+          const skipped = a.count - deleted.size;
+          const note = skipped > 0 ? ` (${skipped} ignore(s), trop anciens)` : '';
           return {
             ok: true,
-            summary: `${deletedCount} message(s) supprime(s) dans "${channelName}"`,
-            display: `${deletedCount} message(s) supprime(s) dans <#${a.channel_id}>${note}.`,
-            data: { deleted: deletedCount },
+            summary: `${deleted.size} message(s) supprime(s) dans "${channelName}"`,
+            display: `${deleted.size} message(s) supprime(s) dans <#${a.channel_id}>${note}.`,
+            data: { deleted: deleted.size },
           };
         } catch (err) {
           return { ok: false, error: `Echec de la purge: ${String(err)}` };

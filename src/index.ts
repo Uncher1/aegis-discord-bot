@@ -12,6 +12,7 @@ import { looksLikeBotAddress, addressConfidence, isAffirmation, isNegation } fro
 import { replyChunked } from './discord/sendChunked.js';
 import { hasPending, takePendingBatch, pendingDescriptions, clearPending } from './bot/pendingAction.js';
 import { botHasPermission } from './tools/permissions.js';
+import type { ToolResult } from './tools/types.js';
 import { recordAudit } from './bot/audit.js';
 
 async function main(): Promise<void> {
@@ -63,6 +64,11 @@ async function main(): Promise<void> {
     if (hasPending(state.owner.id)) {
       if (isAffirmation(message.content)) {
         const actions = takePendingBatch(state.owner.id);
+        if (actions.length === 0) {
+          logger.info('Pending batch expired before confirmation');
+          await replyChunked(message, 'La demande a expiré (trop de temps écoulé). Reformule-la si tu veux toujours la faire.');
+          return;
+        }
         logger.info('Confirmed pending batch', { count: actions.length });
         const lines: string[] = [];
         for (const action of actions) {
@@ -71,7 +77,15 @@ async function main(): Promise<void> {
             lines.push(`Je n'ai pas la permission Discord requise pour: ${action.description}`);
             continue;
           }
-          const result = await action.run();
+          let result: ToolResult;
+          try {
+            result = await action.run();
+          } catch (err) {
+            // Defensive: a tool should return ok:false, but never let a throw
+            // abort the rest of a confirmed batch.
+            logger.error('Pending action threw', { description: action.description, err: String(err) });
+            result = { ok: false, error: `Exception: ${String(err)}` };
+          }
           recordAudit({
             owner: state.owner.tag,
             action: action.toolName,

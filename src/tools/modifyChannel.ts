@@ -182,6 +182,9 @@ export const modifyChannelTool: ToolDefinition = {
     if (!a.channel_id || typeof a.channel_id !== 'string') {
       return { ok: false, error: 'channel_id (string) requis.' };
     }
+    if (a.name !== undefined && a.name.trim() === '') {
+      return { ok: false, error: 'name doit etre une chaine non vide.' };
+    }
     const raw = ctx.guild.channels.cache.get(a.channel_id);
     if (!raw) {
       return { ok: false, error: `Salon ID "${a.channel_id}" introuvable.` };
