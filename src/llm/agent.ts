@@ -140,7 +140,8 @@ ACTIONS DISPO (exécutées immédiatement, le bot agit avec SES propres permissi
 - Membres: set_nickname (pseudo), move_member (déplacer/déconnecter en vocal).
 - Messages: purge_messages (suppression en masse).
 - Serveur: modify_server (nom, AFK, vérification, salon système, filtre), clone_channel (dupliquer un salon).
-NON DISPO (dis "pas encore", n'appelle JAMAIS de tool inexistant): gérer les émojis, les événements.
+- Émojis: create_emoji (depuis une URL ou une image jointe listée dans le Contexte), delete_emoji.
+NON DISPO (dis "pas encore", n'appelle JAMAIS de tool inexistant): les événements programmés.
 
 ACTIONS IRRÉVERSIBLES AVEC CONFIRMATION (delete_channel, delete_category, delete_role, kick_member, ban_member, purge_messages):
 Ces outils n'agissent PAS tout de suite: ils mettent l'action en file d'attente et renvoient un résultat "mise en attente de confirmation" (display VIDE). Le système ajoute AUTOMATIQUEMENT, après ta réponse, la demande de confirmation groupée (oui/non) avec la liste des actions. Donc: ne pose PAS toi-même la question oui/non, ne récris PAS la liste, ne prétends PAS que c'est fait. Réponds par une phrase courte et neutre, ou rien. Tu PEUX empiler plusieurs actions destructives dans la même réponse (ex: supprimer 3 salons d'un coup, ou supprimer un salon ET bannir un membre): elles seront toutes confirmées par un seul "oui". Pour delete_category, ne mets delete_children que si l'owner demande explicitement de supprimer aussi les salons à l'intérieur.
@@ -409,6 +410,18 @@ export async function runAgent(
     ? `parent="${ctx.parentName}"=${ctx.parentId}`
     : 'parent=aucun';
 
+  const emojis = Array.from(guild.emojis.cache.values());
+  const emojisBlock =
+    emojis.length === 0
+      ? ''
+      : `Emojis (${emojis.length}, format ":nom:"=id): ${emojis.map((e) => `":${e.name}:"=${e.id}`).join(', ')}\n\n`;
+
+  const attachmentUrls = Array.from(message.attachments.values()).map((att) => att.url);
+  const attachmentsLine =
+    attachmentUrls.length > 0
+      ? `Images/fichiers joints au message (URLs utilisables, ex: create_emoji): ${attachmentUrls.join(', ')}\n\n`
+      : '';
+
   const userContent = `Contexte:
 Date: ${formatDateFR(new Date())} (Europe/Paris)
 Serveur: "${guild.name}", ${guild.memberCount} membres, boost=${boostTierLabel(guild.premiumTier)} (${guild.premiumSubscriptionCount ?? 0}), locale=${guild.preferredLocale}, créé ${formatDateFR(guild.createdAt)}. Stats: ${categories.length} cat, ${nNonCategoryChannels} salons hors-cat, ${roles.length + 1} rôles (@everyone inclus).
@@ -421,7 +434,7 @@ ${channelsBlock}
 
 ${rolesBlock}
 
-Message de ${owner.tag}: ${message.content}`;
+${emojisBlock}${attachmentsLine}Message de ${owner.tag}: ${message.content}`;
 
   const messages: ChatMessage[] = [
     { role: 'system', content: systemPrompt },
