@@ -22,8 +22,9 @@ import { setNicknameTool, moveMemberTool } from './memberManagement.js';
 import { purgeMessagesTool } from './purgeMessages.js';
 import { modifyServerTool } from './modifyServer.js';
 import { cloneChannelTool } from './cloneChannel.js';
-import { createEmojiTool, deleteEmojiTool } from './emoji.js';
+import { listEmojisTool, createEmojiTool, deleteEmojiTool } from './emoji.js';
 import { createEventTool, listEventsTool, deleteEventTool } from './events.js';
+import { serverInfoTool } from './serverInfo.js';
 
 export const tools: ToolDefinition[] = [
   listChannelsTool,
@@ -49,11 +50,13 @@ export const tools: ToolDefinition[] = [
   purgeMessagesTool,
   modifyServerTool,
   cloneChannelTool,
+  listEmojisTool,
   createEmojiTool,
   deleteEmojiTool,
   createEventTool,
   listEventsTool,
   deleteEventTool,
+  serverInfoTool,
 ];
 
 export function findTool(name: string): ToolDefinition | undefined {

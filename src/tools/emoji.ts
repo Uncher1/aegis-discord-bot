@@ -1,6 +1,30 @@
 import { PermissionFlagsBits } from 'discord.js';
 import type { ToolDefinition, ToolResult } from './types.js';
 
+export const listEmojisTool: ToolDefinition = {
+  name: 'list_emojis',
+  description: "Liste les emojis personnalises du serveur avec leur nom et leur ID (utile avant un delete_emoji).",
+  parameters: { type: 'object', properties: {}, required: [] },
+  requiredPermission: null,
+  execute: async (_args, ctx): Promise<ToolResult> => {
+    const emojis = Array.from(ctx.guild.emojis.cache.values());
+    const lines: string[] = [`### Emojis de ${ctx.guild.name} (${emojis.length})`, ''];
+    if (emojis.length === 0) {
+      lines.push('-# *(aucun emoji personnalise)*');
+    } else {
+      for (const e of emojis) {
+        lines.push(`- ${e.toString()} \`:${e.name}:\` (\`${e.id}\`)${e.animated ? ' (animé)' : ''}`);
+      }
+    }
+    return {
+      ok: true,
+      summary: `${emojis.length} emoji(s)`,
+      display: lines.join('\n'),
+      data: emojis.map((e) => ({ id: e.id, name: e.name, animated: e.animated })),
+    };
+  },
+};
+
 export const createEmojiTool: ToolDefinition = {
   name: 'create_emoji',
   description:
