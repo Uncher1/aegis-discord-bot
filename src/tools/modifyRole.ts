@@ -13,6 +13,7 @@ interface Args {
   permissions?: string[];
   add_permissions?: string[];
   remove_permissions?: string[];
+  position?: number;
 }
 
 export const modifyRoleTool: ToolDefinition = {
@@ -44,6 +45,11 @@ export const modifyRoleTool: ToolDefinition = {
         type: 'array',
         items: { type: 'string' },
         description: 'Permissions globales a retirer de celles presentes.',
+      },
+      position: {
+        type: 'number',
+        description:
+          "Position du role dans la hierarchie (1 = juste au-dessus de @everyone; plus haut = plus important). Discord plafonne automatiquement sous le role le plus haut du bot.",
       },
     },
     required: ['role_id'],
@@ -103,6 +109,12 @@ export const modifyRoleTool: ToolDefinition = {
     if (a.hoist !== undefined) editPayload.hoist = a.hoist;
     if (a.mentionable !== undefined) editPayload.mentionable = a.mentionable;
     if (permsTouched) editPayload.permissions = newBits;
+    if (a.position !== undefined) {
+      if (!Number.isInteger(a.position) || a.position < 1) {
+        return { ok: false, error: 'position doit etre un entier >= 1 (@everyone occupe la position 0).' };
+      }
+      editPayload.position = a.position;
+    }
 
     const meaningfulKeys = Object.keys(editPayload).filter((k) => k !== 'reason');
     if (meaningfulKeys.length === 0) {
@@ -127,6 +139,7 @@ export const modifyRoleTool: ToolDefinition = {
     if (a.hoist !== undefined) changes.push(a.hoist ? 'affiche separement' : 'plus affiche separement');
     if (a.mentionable !== undefined) changes.push(a.mentionable ? 'mentionnable' : 'non mentionnable');
     if (permsTouched) changes.push('permissions ajustees');
+    if (a.position !== undefined) changes.push(`position ${a.position}`);
 
     return {
       ok: true,

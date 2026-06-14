@@ -16,6 +16,7 @@ import {
   banMemberTool,
   unbanMemberTool,
   timeoutMemberTool,
+  listBansTool,
 } from './moderation.js';
 import { setNicknameTool, moveMemberTool } from './memberManagement.js';
 import { purgeMessagesTool } from './purgeMessages.js';
@@ -42,6 +43,7 @@ export const tools: ToolDefinition[] = [
   banMemberTool,
   unbanMemberTool,
   timeoutMemberTool,
+  listBansTool,
   setNicknameTool,
   moveMemberTool,
   purgeMessagesTool,

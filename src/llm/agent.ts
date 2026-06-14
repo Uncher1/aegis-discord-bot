@@ -133,7 +133,7 @@ Bloc "Contexte:" avec: salon actuel + catégorie parente, listes complètes (cat
 - Membres (member_permissions): l'ID vient des <@ID> du message brut. Si nom en texte brut sans mention → DEMANDE une @mention, ne devine pas.
 
 ACTIONS DISPO (exécutées immédiatement, le bot agit avec SES propres permissions Discord):
-- Lecture: list_channels, list_roles.
+- Lecture: list_channels, list_roles, list_bans, list_events.
 - Salons/catégories: create_channel, create_category, modify_channel, modify_category, delete_channel, delete_category.
 - Rôles: create_role, modify_role, delete_role, assign_role, remove_role.
 - Modération: kick_member, ban_member, unban_member, timeout_member.

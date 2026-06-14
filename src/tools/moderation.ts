@@ -5,6 +5,35 @@ import { memberModerationError } from './hierarchy.js';
 
 const MAX_TIMEOUT_MINUTES = 28 * 24 * 60; // Discord hard cap: 28 days.
 
+export const listBansTool: ToolDefinition = {
+  name: 'list_bans',
+  description: 'Liste les utilisateurs bannis du serveur, avec la raison si elle existe. Utile avant un unban_member.',
+  parameters: { type: 'object', properties: {}, required: [] },
+  requiredPermission: PermissionFlagsBits.BanMembers,
+  execute: async (_args, ctx): Promise<ToolResult> => {
+    try {
+      const bans = await ctx.guild.bans.fetch();
+      const lines: string[] = [`### Bannis de ${ctx.guild.name} (${bans.size})`, ''];
+      if (bans.size === 0) {
+        lines.push('-# *(personne n\'est banni)*');
+      } else {
+        for (const ban of bans.values()) {
+          const reason = ban.reason ? ` - ${ban.reason}` : '';
+          lines.push(`- **${ban.user.tag}** (\`${ban.user.id}\`)${reason}`);
+        }
+      }
+      return {
+        ok: true,
+        summary: `${bans.size} banni(s)`,
+        display: lines.join('\n'),
+        data: bans.map((b) => ({ id: b.user.id, tag: b.user.tag, reason: b.reason })),
+      };
+    } catch (err) {
+      return { ok: false, error: `Echec de la lecture des bannissements: ${String(err)}` };
+    }
+  },
+};
+
 export const kickMemberTool: ToolDefinition = {
   name: 'kick_member',
   description:
