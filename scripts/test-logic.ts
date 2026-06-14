@@ -9,6 +9,7 @@ import { looksLikeBotAddress, addressConfidence, isAffirmation, isNegation } fro
 import { parseColor } from '../src/tools/colorParse.js';
 import { parsePermissionNames, permissionNamesOf } from '../src/tools/permNames.js';
 import { applyOverwriteEdit, bitsOf } from '../src/tools/overwrites.js';
+import { splitForDiscord } from '../src/discord/sendChunked.js';
 import { PermissionFlagsBits } from 'discord.js';
 import type { ToolResult } from '../src/tools/types.js';
 
@@ -129,6 +130,16 @@ check('merge neutral on one flag keeps others', (() => { const r = applyOverwrit
 check('replace sets exact bits', (() => { const r = applyOverwriteEdit({ allow: V, deny: S }, 'replace', S, 0n, 0n); return !!r && r.allow === S && r.deny === 0n; })());
 check('replace with nothing -> null', applyOverwriteEdit({ allow: V, deny: 0n }, 'replace', 0n, 0n, 0n) === null);
 check('remove -> null', applyOverwriteEdit({ allow: V, deny: S }, 'remove', 0n, 0n, 0n) === null);
+
+// --- sendChunked: splitForDiscord ---
+check('short text stays one chunk', (() => { const c = splitForDiscord('abc', 10); return c.length === 1 && c[0] === 'abc'; })());
+check('text at limit stays one chunk', splitForDiscord('a'.repeat(10), 10).length === 1);
+check('long text splits', splitForDiscord('a'.repeat(25), 10).length === 3);
+check('every chunk within limit', (() => splitForDiscord('a'.repeat(95), 10).every((c) => c.length <= 10))());
+check('splits on line boundaries', (() => { const c = splitForDiscord('aaa\nbbb\nccc', 5); return c.length === 3 && c[0] === 'aaa'; })());
+check('groups lines under limit', (() => { const c = splitForDiscord('ab\ncd\nef', 5); return c[0] === 'ab\ncd'; })());
+check('hard-splits an oversized line', (() => splitForDiscord('x'.repeat(30), 10).every((c) => c.length <= 10))());
+check('no empty chunks produced', (() => splitForDiscord('aa\n\nbb', 5).every((c) => c.length > 0))());
 
 console.log(`\nRESULTAT: ${passed} passes, ${failed} echecs`);
 process.exit(failed > 0 ? 1 : 0);
