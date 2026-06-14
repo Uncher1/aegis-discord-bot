@@ -10,6 +10,7 @@ import { parseColor } from '../src/tools/colorParse.js';
 import { parsePermissionNames, permissionNamesOf } from '../src/tools/permNames.js';
 import { applyOverwriteEdit, bitsOf } from '../src/tools/overwrites.js';
 import { splitForDiscord } from '../src/discord/sendChunked.js';
+import { toolCallKey, stableStringify } from '../src/llm/toolDedup.js';
 import { PermissionFlagsBits } from 'discord.js';
 import type { ToolResult } from '../src/tools/types.js';
 
@@ -140,6 +141,15 @@ check('splits on line boundaries', (() => { const c = splitForDiscord('aaa\nbbb\
 check('groups lines under limit', (() => { const c = splitForDiscord('ab\ncd\nef', 5); return c[0] === 'ab\ncd'; })());
 check('hard-splits an oversized line', (() => splitForDiscord('x'.repeat(30), 10).every((c) => c.length <= 10))());
 check('no empty chunks produced', (() => splitForDiscord('aa\n\nbb', 5).every((c) => c.length > 0))());
+
+// --- toolDedup (prevents duplicate tool calls in one response) ---
+check('stableStringify is key-order independent', stableStringify({ a: 1, b: 2 }) === stableStringify({ b: 2, a: 1 }));
+check('stableStringify recurses into nested objects', stableStringify({ x: { p: 1, q: 2 } }) === stableStringify({ x: { q: 2, p: 1 } }));
+check('stableStringify keeps array order', stableStringify([1, 2]) !== stableStringify([2, 1]));
+check('same call different key order = same dedup key', toolCallKey('create_channel', '{"name":"x","type":"text"}') === toolCallKey('create_channel', '{"type":"text","name":"x"}'));
+check('different args = different dedup key', toolCallKey('create_channel', '{"name":"a"}') !== toolCallKey('create_channel', '{"name":"b"}'));
+check('different tool = different dedup key', toolCallKey('delete_channel', '{"channel_id":"1"}') !== toolCallKey('modify_channel', '{"channel_id":"1"}'));
+check('invalid json falls back to raw', toolCallKey('x', 'not json') === 'x:not json');
 
 console.log(`\nRESULTAT: ${passed} passes, ${failed} echecs`);
 process.exit(failed > 0 ? 1 : 0);

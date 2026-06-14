@@ -6,6 +6,7 @@ import { findTool, toolsAsLlmFormat } from '../tools/registry.js';
 import { botHasPermission } from '../tools/permissions.js';
 import { recordAudit } from '../bot/audit.js';
 import { hasPending } from '../bot/pendingAction.js';
+import { toolCallKey } from './toolDedup.js';
 
 function formatDateFR(d: Date): string {
   return d.toLocaleString('fr-FR', {
@@ -288,26 +289,6 @@ function extractChannelContext(message: Message): ChannelContext {
     parentName: parent?.name ?? null,
     parentId: parent?.id ?? null,
   };
-}
-
-/** Order-independent serialization, so two tool calls that differ only by JSON
- * key order are recognised as the same call. */
-function stableStringify(v: unknown): string {
-  if (v === null || typeof v !== 'object') return JSON.stringify(v) ?? 'null';
-  if (Array.isArray(v)) return `[${v.map(stableStringify).join(',')}]`;
-  const obj = v as Record<string, unknown>;
-  return `{${Object.keys(obj)
-    .sort()
-    .map((k) => `${JSON.stringify(k)}:${stableStringify(obj[k])}`)
-    .join(',')}}`;
-}
-
-function toolCallKey(name: string, rawArgs: string): string {
-  try {
-    return `${name}:${stableStringify(JSON.parse(rawArgs))}`;
-  } catch {
-    return `${name}:${rawArgs}`;
-  }
 }
 
 export async function runAgent(
