@@ -17,6 +17,8 @@ import {
   unbanMemberTool,
   timeoutMemberTool,
 } from './moderation.js';
+import { setNicknameTool, moveMemberTool } from './memberManagement.js';
+import { purgeMessagesTool } from './purgeMessages.js';
 
 export const tools: ToolDefinition[] = [
   listChannelsTool,
@@ -36,6 +38,9 @@ export const tools: ToolDefinition[] = [
   banMemberTool,
   unbanMemberTool,
   timeoutMemberTool,
+  setNicknameTool,
+  moveMemberTool,
+  purgeMessagesTool,
 ];
 
 export function findTool(name: string): ToolDefinition | undefined {
